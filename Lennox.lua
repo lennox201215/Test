@@ -54,40 +54,40 @@ submitBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- WAIT UNTIL KEY IS CORRECT
 repeat
 	RunService.RenderStepped:Wait()
 until accessGranted
 
 -- ===========================
--- NEVERGAME MENU START
+-- NEVERGAME MENU
 -- ===========================
--- VARIABLES
 local espEnabled = false
 local tracersEnabled = false
 local flyEnabled = false
 local flySpeed = 50
+local spinbotEnabled = false
+local spinbotSpeed = 360 -- Grad pro Sekunde
 local keys = {}
 local espBoxes = {}
 local tracerLines = {}
 local flyBV, flyBG
 
--- Remove old GUI if exists
+-- Remove old GUI
 local old = playerGui:FindFirstChild("NevergameGui")
 if old then old:Destroy() end
 
--- GUI
+-- Main GUI
 local screenGui = Instance.new("ScreenGui", playerGui)
 screenGui.Name = "NevergameGui"
 
 local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0,500,0,360)
-frame.Position = UDim2.new(0.5,-250,0.5,-180)
+frame.Size = UDim2.new(0,520,0,400)
+frame.Position = UDim2.new(0.5,-260,0.5,-200)
 frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
 frame.BorderSizePixel = 0
 Instance.new("UICorner", frame)
 
--- DRAG
+-- Drag
 local dragging, dragStart, startPos
 frame.InputBegan:Connect(function(i)
 	if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -109,44 +109,128 @@ UserInputService.InputEnded:Connect(function(i)
 	if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
 end)
 
--- BUTTON HELPER
-local function makeBtn(text,x,y)
-	local b = Instance.new("TextButton", frame)
-	b.Size = UDim2.new(0,140,0,28)
-	b.Position = UDim2.new(0,x,0,y)
-	b.Text = text
-	b.BackgroundColor3 = Color3.fromRGB(60,60,60)
-	b.TextColor3 = Color3.new(1,1,1)
-	return b
+-- ===========================
+-- TABS
+-- ===========================
+local tabNames = {"ESP","Tracers","Fly","Spinbot","Run Code"}
+local tabFrames = {}
+local buttonY = 10
+
+for i, name in ipairs(tabNames) do
+	local btn = Instance.new("TextButton", frame)
+	btn.Size = UDim2.new(0,100,0,28)
+	btn.Position = UDim2.new(0, 10 + (i-1)*105, 0, buttonY)
+	btn.Text = name
+	btn.Font = Enum.Font.GothamBold
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+
+	local tabFrame = Instance.new("Frame", frame)
+	tabFrame.Size = UDim2.new(1,-20,1,-50)
+	tabFrame.Position = UDim2.new(0,10,0,50)
+	tabFrame.BackgroundTransparency = 1
+	tabFrame.Visible = (i==1) -- only first tab visible
+	tabFrames[name] = tabFrame
+
+	btn.MouseButton1Click:Connect(function()
+		for k,f in pairs(tabFrames) do f.Visible = false end
+		tabFrame.Visible = true
+	end)
 end
 
-local espBtn = makeBtn("ESP: OFF",10,10)
-local tracerBtn = makeBtn("TRACERS: OFF",160,10)
-local flyBtn = makeBtn("FLY: OFF",310,10)
-
-espBtn.MouseButton1Click:Connect(function()
+-- ===========================
+-- ESP TAB
+-- ===========================
+local espTab = tabFrames["ESP"]
+local espToggle = Instance.new("TextButton", espTab)
+espToggle.Size = UDim2.new(0,140,0,28)
+espToggle.Position = UDim2.new(0,10,0,10)
+espToggle.Text = "ESP: OFF"
+espToggle.BackgroundColor3 = Color3.fromRGB(70,0,0)
+espToggle.TextColor3 = Color3.new(1,1,1)
+espToggle.MouseButton1Click:Connect(function()
 	espEnabled = not espEnabled
-	espBtn.Text = "ESP: "..(espEnabled and "ON" or "OFF")
+	espToggle.Text = "ESP: "..(espEnabled and "ON" or "OFF")
 end)
 
-tracerBtn.MouseButton1Click:Connect(function()
+-- ===========================
+-- TRACERS TAB
+-- ===========================
+local tracerTab = tabFrames["Tracers"]
+local tracerToggle = Instance.new("TextButton", tracerTab)
+tracerToggle.Size = UDim2.new(0,140,0,28)
+tracerToggle.Position = UDim2.new(0,10,0,10)
+tracerToggle.Text = "Tracers: OFF"
+tracerToggle.BackgroundColor3 = Color3.fromRGB(0,70,0)
+tracerToggle.TextColor3 = Color3.new(1,1,1)
+tracerToggle.MouseButton1Click:Connect(function()
 	tracersEnabled = not tracersEnabled
-	tracerBtn.Text = "TRACERS: "..(tracersEnabled and "ON" or "OFF")
+	tracerToggle.Text = "Tracers: "..(tracersEnabled and "ON" or "OFF")
 	if not tracersEnabled then
 		for _,l in pairs(tracerLines) do pcall(function() l:Remove() end) end
 		tracerLines = {}
 	end
 end)
 
-flyBtn.MouseButton1Click:Connect(function()
+-- ===========================
+-- FLY TAB
+-- ===========================
+local flyTab = tabFrames["Fly"]
+local flyToggle = Instance.new("TextButton", flyTab)
+flyToggle.Size = UDim2.new(0,140,0,28)
+flyToggle.Position = UDim2.new(0,10,0,10)
+flyToggle.Text = "Fly: OFF"
+flyToggle.BackgroundColor3 = Color3.fromRGB(0,0,70)
+flyToggle.TextColor3 = Color3.new(1,1,1)
+flyToggle.MouseButton1Click:Connect(function()
 	flyEnabled = not flyEnabled
-	flyBtn.Text = "FLY: "..(flyEnabled and "ON" or "OFF")
+	flyToggle.Text = "Fly: "..(flyEnabled and "ON" or "OFF")
 end)
 
--- CODE EXECUTOR
-local codeBox = Instance.new("TextBox", frame)
+local flySpeedBox = Instance.new("TextBox", flyTab)
+flySpeedBox.Size = UDim2.new(0,100,0,28)
+flySpeedBox.Position = UDim2.new(0,160,0,10)
+flySpeedBox.PlaceholderText = tostring(flySpeed)
+flySpeedBox.BackgroundColor3 = Color3.fromRGB(40,40,40)
+flySpeedBox.TextColor3 = Color3.new(1,1,1)
+flySpeedBox.FocusLost:Connect(function()
+	local val = tonumber(flySpeedBox.Text)
+	if val then flySpeed = math.clamp(val,5,500) end
+end)
+
+-- ===========================
+-- SPINBOT TAB
+-- ===========================
+local spinTab = tabFrames["Spinbot"]
+local spinToggle = Instance.new("TextButton", spinTab)
+spinToggle.Size = UDim2.new(0,140,0,28)
+spinToggle.Position = UDim2.new(0,10,0,10)
+spinToggle.Text = "Spinbot: OFF"
+spinToggle.BackgroundColor3 = Color3.fromRGB(150,0,150)
+spinToggle.TextColor3 = Color3.new(1,1,1)
+spinToggle.MouseButton1Click:Connect(function()
+	spinbotEnabled = not spinbotEnabled
+	spinToggle.Text = "Spinbot: "..(spinbotEnabled and "ON" or "OFF")
+end)
+
+local spinSpeedBox = Instance.new("TextBox", spinTab)
+spinSpeedBox.Size = UDim2.new(0,100,0,28)
+spinSpeedBox.Position = UDim2.new(0,160,0,10)
+spinSpeedBox.PlaceholderText = tostring(spinbotSpeed)
+spinSpeedBox.BackgroundColor3 = Color3.fromRGB(40,40,40)
+spinSpeedBox.TextColor3 = Color3.new(1,1,1)
+spinSpeedBox.FocusLost:Connect(function()
+	local val = tonumber(spinSpeedBox.Text)
+	if val then spinbotSpeed = math.clamp(val,10,2000) end
+end)
+
+-- ===========================
+-- RUN CODE TAB
+-- ===========================
+local runTab = tabFrames["Run Code"]
+local codeBox = Instance.new("TextBox", runTab)
 codeBox.Size = UDim2.new(1,-20,0,100)
-codeBox.Position = UDim2.new(0,10,0,50)
+codeBox.Position = UDim2.new(0,10,0,10)
 codeBox.PlaceholderText = "Paste Lua / loadstring / URL here..."
 codeBox.TextWrapped = true
 codeBox.ClearTextOnFocus = false
@@ -154,23 +238,53 @@ codeBox.BackgroundColor3 = Color3.fromRGB(30,30,30)
 codeBox.TextColor3 = Color3.new(1,1,1)
 codeBox.TextYAlignment = Enum.TextYAlignment.Top
 
-local runBtn = makeBtn("RUN CODE",10,160)
+-- INJECT Button (Pop-up)
+local injectBtn = Instance.new("TextButton", runTab)
+injectBtn.Size = UDim2.new(0,140,0,28)
+injectBtn.Position = UDim2.new(0,10,0,120)
+injectBtn.Text = "INJECT"
+injectBtn.BackgroundColor3 = Color3.fromRGB(70,70,0)
+injectBtn.TextColor3 = Color3.new(1,1,1)
+injectBtn.MouseButton1Click:Connect(function()
+	local popup = Instance.new("Frame", screenGui)
+	popup.Size = UDim2.new(0,200,0,100)
+	popup.Position = UDim2.new(0.5,-100,0.5,-50)
+	popup.BackgroundColor3 = Color3.fromRGB(30,30,30)
+	popup.BorderSizePixel = 0
+	Instance.new("UICorner", popup)
+	local lbl = Instance.new("TextLabel", popup)
+	lbl.Size = UDim2.new(1,0,1,0)
+	lbl.Position = UDim2.new(0,0,0,0)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = "Injected!"
+	lbl.TextColor3 = Color3.fromRGB(0,255,0)
+	lbl.Font = Enum.Font.GothamBold
+	lbl.TextSize = 24
+	delay(2,function() popup:Destroy() end)
+end)
 
+-- RUN CODE Button
+local runBtn = Instance.new("TextButton", runTab)
+runBtn.Size = UDim2.new(0,140,0,28)
+runBtn.Position = UDim2.new(0,160,0,120)
+runBtn.Text = "RUN CODE"
+runBtn.BackgroundColor3 = Color3.fromRGB(0,70,70)
+runBtn.TextColor3 = Color3.new(1,1,1)
 runBtn.MouseButton1Click:Connect(function()
 	local src = codeBox.Text
 	if not src or src == "" then return end
 	pcall(function()
 		if src:sub(1,4) == "http" then
 			loadstring(game:HttpGet(src))()
-		elseif src:find("loadstring") then
-			loadstring(src)()
 		else
 			loadstring(src)()
 		end
 	end)
 end)
 
+-- ===========================
 -- INPUT HANDLING
+-- ===========================
 UserInputService.InputBegan:Connect(function(i,gp)
 	if not gp then keys[i.KeyCode]=true end
 end)
@@ -178,8 +292,10 @@ UserInputService.InputEnded:Connect(function(i)
 	keys[i.KeyCode]=false
 end)
 
+-- ===========================
 -- MAIN LOOP
-RunService.RenderStepped:Connect(function()
+-- ===========================
+RunService.RenderStepped:Connect(function(deltaTime)
 	local char = player.Character
 	if not char then return end
 	local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -208,7 +324,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- TRACERS
+	-- Tracers
 	if tracersEnabled and Drawing then
 		local cam = workspace.CurrentCamera
 		for _,plr in pairs(Players:GetPlayers()) do
@@ -231,7 +347,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- FLY
+	-- Fly
 	if flyEnabled and hrp and hum then
 		hum.PlatformStand = true
 		if not flyBV then
@@ -254,5 +370,10 @@ RunService.RenderStepped:Connect(function()
 		flyBV:Destroy() flyBV=nil
 		if flyBG then flyBG:Destroy() flyBG=nil end
 		if hum then hum.PlatformStand=false end
+	end
+
+	-- Spinbot
+	if spinbotEnabled and hrp then
+		hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(spinbotSpeed)*deltaTime, 0)
 	end
 end)
