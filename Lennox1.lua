@@ -1,84 +1,190 @@
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
-local ESP_ENABLED = true
-local ESPObjects = {}
 
--- GUI erstellen
-local gui = Instance.new("ScreenGui")
-gui.Name = "ESP_GUI"
+-- Status
+local BOX_ON = true
+local SKELETON_ON = false
+local AIM_ON = false
+
+local Boxes = {}
+local Skeletons = {}
+
+-------------------------------------------------
+-- GUI
+-------------------------------------------------
+local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
 gui.ResetOnSpawn = false
-gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local button = Instance.new("TextButton")
-button.Size = UDim2.new(0, 200, 0, 50)
-button.Position = UDim2.new(0, 20, 0, 20)
-button.Text = "ESP: ON"
-button.TextScaled = true
-button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-button.TextColor3 = Color3.fromRGB(255, 0, 0)
-button.Parent = gui
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 250, 0, 230)
+frame.Position = UDim2.new(0, 20, 0, 20)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 
--- ESP hinzufügen
-local function addESP(character, player)
-	if not ESP_ENABLED then return end
-	if ESPObjects[player] then return end
-
-	local highlight = Instance.new("Highlight")
-	highlight.Name = "ESP_Highlight"
-	highlight.FillTransparency = 1
-	highlight.OutlineTransparency = 0
-	highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-	highlight.FillColor = Color3.fromRGB(255, 0, 0)
-	highlight.Parent = character
-
-	ESPObjects[player] = highlight
+local function makeButton(text, y)
+	local b = Instance.new("TextButton", frame)
+	b.Size = UDim2.new(1,-20,0,40)
+	b.Position = UDim2.new(0,10,0,y)
+	b.Text = text
+	b.TextScaled = true
+	b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	b.TextColor3 = Color3.fromRGB(255,255,255)
+	return b
 end
 
--- ESP entfernen
-local function removeESP(player)
-	if ESPObjects[player] then
-		ESPObjects[player]:Destroy()
-		ESPObjects[player] = nil
+local boxBtn = makeButton("Box ESP: ON", 10)
+local skelBtn = makeButton("Skeleton ESP: OFF", 60)
+local aimBtn = makeButton("Aim Assist: OFF", 110)
+
+-------------------------------------------------
+-- BOX ESP
+-------------------------------------------------
+local function addBox(player)
+	if Boxes[player] or not player.Character then return end
+	local box = Instance.new("SelectionBox")
+	box.Adornee = player.Character
+	box.LineThickness = 0.05
+	box.Color3 = Color3.fromRGB(255,0,0)
+	box.Parent = player.Character
+	Boxes[player] = box
+end
+
+local function removeBox(player)
+	if Boxes[player] then
+		Boxes[player]:Destroy()
+		Boxes[player] = nil
 	end
 end
 
--- Spieler-Setup
-local function setupPlayer(player)
-	player.CharacterAdded:Connect(function(char)
-		task.wait(1)
-		if player ~= LocalPlayer then
-			addESP(char, player)
+-------------------------------------------------
+-- SKELETON ESP (mit Beams)
+-------------------------------------------------
+local function makeBeam(p0, p1, parent)
+	local a0 = Instance.new("Attachment", p0)
+	local a1 = Instance.new("Attachment", p1)
+	local beam = Instance.new("Beam", parent)
+	beam.Attachment0 = a0
+	beam.Attachment1 = a1
+	beam.Width0 = 0.05
+	beam.Width1 = 0.05
+	beam.Color = ColorSequence.new(Color3.fromRGB(0,255,0))
+	return {beam, a0, a1}
+end
+
+local function addSkeleton(player)
+	if Skeletons[player] or not player.Character then return end
+	local c = player.Character
+	if not c:FindFirstChild("Humanoid") then return end
+
+	local parts = {
+		{"Head","UpperTorso"},
+		{"UpperTorso","LowerTorso"},
+		{"UpperTorso","LeftUpperArm"},
+		{"LeftUpperArm","LeftLowerArm"},
+		{"UpperTorso","RightUpperArm"},
+		{"RightUpperArm","RightLowerArm"},
+		{"LowerTorso","LeftUpperLeg"},
+		{"LeftUpperLeg","LeftLowerLeg"},
+		{"LowerTorso","RightUpperLeg"},
+		{"RightUpperLeg","RightLowerLeg"},
+	}
+
+	local list = {}
+	for _, pair in pairs(parts) do
+		if c:FindFirstChild(pair[1]) and c:FindFirstChild(pair[2]) then
+			table.insert(list, makeBeam(c[pair[1]], c[pair[2]], c))
 		end
-	end)
-
-	if player.Character and player ~= LocalPlayer then
-		addESP(player.Character, player)
 	end
+	Skeletons[player] = list
 end
 
--- Button Logik
-button.MouseButton1Click:Connect(function()
-	ESP_ENABLED = not ESP_ENABLED
-	if ESP_ENABLED then
-		button.Text = "ESP: ON"
-		for _, p in pairs(Players:GetPlayers()) do
-			if p ~= LocalPlayer and p.Character then
-				addESP(p.Character, p)
+local function removeSkeleton(player)
+	if Skeletons[player] then
+		for _, objs in pairs(Skeletons[player]) do
+			for _, o in pairs(objs) do
+				if o then o:Destroy() end
 			end
 		end
-	else
-		button.Text = "ESP: OFF"
-		for p, _ in pairs(ESPObjects) do
-			removeESP(p)
+		Skeletons[player] = nil
+	end
+end
+
+-------------------------------------------------
+-- Refresh
+-------------------------------------------------
+local function refreshAll()
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer and p.Character then
+			if BOX_ON then addBox(p) else removeBox(p) end
+			if SKELETON_ON then addSkeleton(p) else removeSkeleton(p) end
 		end
+	end
+end
+
+-------------------------------------------------
+-- Aim Assist
+-------------------------------------------------
+local function getClosestTarget()
+	local best, dist = nil, 300
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+			local h = p.Character.Head
+			local d = (Camera.CFrame.Position - h.Position).Magnitude
+			if d < dist then
+				dist = d
+				best = h
+			end
+		end
+	end
+	return best
+end
+
+RunService.RenderStepped:Connect(function()
+	if not AIM_ON then return end
+	local t = getClosestTarget()
+	if t then
+		local pos = Camera.CFrame.Position
+		Camera.CFrame = CFrame.new(pos, t.Position)
 	end
 end)
 
--- Aktive Spieler
-for _, player in pairs(Players:GetPlayers()) do
-	setupPlayer(player)
+-------------------------------------------------
+-- Buttons
+-------------------------------------------------
+boxBtn.MouseButton1Click:Connect(function()
+	BOX_ON = not BOX_ON
+	boxBtn.Text = BOX_ON and "Box ESP: ON" or "Box ESP: OFF"
+	refreshAll()
+end)
+
+skelBtn.MouseButton1Click:Connect(function()
+	SKELETON_ON = not SKELETON_ON
+	skelBtn.Text = SKELETON_ON and "Skeleton ESP: ON" or "Skeleton ESP: OFF"
+	refreshAll()
+end)
+
+aimBtn.MouseButton1Click:Connect(function()
+	AIM_ON = not AIM_ON
+	aimBtn.Text = AIM_ON and "Aim Assist: ON" or "Aim Assist: OFF"
+end)
+
+-------------------------------------------------
+-- Spieler Setup
+-------------------------------------------------
+local function setupPlayer(player)
+	player.CharacterAdded:Connect(function()
+		task.wait(1)
+		refreshAll()
+	end)
 end
 
--- Neue Spieler
+for _, p in pairs(Players:GetPlayers()) do
+	setupPlayer(p)
+end
 Players.PlayerAdded:Connect(setupPlayer)
-Players.PlayerRemoving:Connect(removeESP)
+Players.PlayerRemoving:Connect(function(p)
+	removeBox(p)
+	removeSkeleton(p)
+end)
