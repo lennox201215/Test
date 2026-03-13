@@ -1,0 +1,844 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+UIS.MouseIconEnabled = false
+
+local gui = Instance.new("ScreenGui")
+gui.Parent = player:WaitForChild("PlayerGui")
+gui.ResetOnSpawn = false
+
+-- TOGGLE BUTTON
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0,50,0,50)
+toggleBtn.Position = UDim2.new(1,-60,0.5,-25)
+toggleBtn.Text = "M"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(255,120,150)
+toggleBtn.TextColor3 = Color3.new(1,1,1)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 20
+
+local toggleCorner = Instance.new("UICorner", toggleBtn)
+toggleCorner.CornerRadius = UDim.new(0,10)
+
+local toggleStroke = Instance.new("UIStroke", toggleBtn)
+toggleStroke.Color = Color3.fromRGB(255,120,150)
+toggleStroke.Thickness = 2
+
+toggleBtn.MouseEnter:Connect(function()
+    TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+toggleBtn.MouseLeave:Connect(function()
+    TweenService:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+toggleBtn.MouseButton1Click:Connect(function()
+    toggleMenu()
+end)
+
+-- MAIN WINDOW
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0,600,0,350)
+main.Position = UDim2.new(0.5,0,0.5,0)
+main.AnchorPoint = Vector2.new(0.5,0.5)
+main.BackgroundColor3 = Color3.fromRGB(20,20,20)
+
+local corner = Instance.new("UICorner", main)
+corner.CornerRadius = UDim.new(0,15)
+
+local gradient = Instance.new("UIGradient", main)
+gradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255,120,150)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(200,80,120))
+}
+gradient.Rotation = 90
+
+local stroke = Instance.new("UIStroke", main)
+stroke.Color = Color3.fromRGB(255,120,150)
+stroke.Thickness = 2
+
+-- TITLE BAR
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundColor3 = Color3.fromRGB(30,30,30)
+title.Text = "Primordial"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+
+local titleCorner = Instance.new("UICorner", title)
+titleCorner.CornerRadius = UDim.new(0,10)
+
+local titleGradient = Instance.new("UIGradient", title)
+titleGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255,120,150)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(200,100,125))
+}
+titleGradient.Rotation = 90
+
+-- CLOSE BUTTON
+local closeButton = Instance.new("TextButton", title)
+closeButton.Size = UDim2.new(0,30,0,30)
+closeButton.Position = UDim2.new(1,-35,0,5)
+closeButton.Text = "X"
+closeButton.BackgroundColor3 = Color3.fromRGB(200,50,50)
+closeButton.TextColor3 = Color3.new(1,1,1)
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 18
+
+local closeCorner = Instance.new("UICorner", closeButton)
+closeCorner.CornerRadius = UDim.new(0,5)
+
+closeButton.MouseButton1Click:Connect(function()
+    local tween = TweenService:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
+    tween:Play()
+    tween.Completed:Wait()
+    gui:Destroy()
+end)
+
+closeButton.MouseEnter:Connect(function()
+    TweenService:Create(closeButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,70,70)}):Play()
+end)
+
+closeButton.MouseLeave:Connect(function()
+    TweenService:Create(closeButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,50,50)}):Play()
+end)
+
+-- DRAGGING
+local dragging=false
+local dragStart
+local startPos
+
+title.InputBegan:Connect(function(input)
+	if input.UserInputType==Enum.UserInputType.MouseButton1 then
+		dragging=true
+		dragStart=input.Position
+		startPos=main.Position
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+	if input.UserInputType==Enum.UserInputType.MouseButton1 then
+		dragging=false
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType==Enum.UserInputType.MouseMovement then
+		local delta=input.Position-dragStart
+		
+		main.Position=UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset+delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset+delta.Y
+		)
+	end
+end)
+
+-- TAB BAR
+local tabBar = Instance.new("Frame", main)
+tabBar.Position = UDim2.new(0,0,0,40)
+tabBar.Size = UDim2.new(1,0,0,30)
+tabBar.BackgroundColor3 = Color3.fromRGB(25,25,25)
+
+local tabCorner = Instance.new("UICorner", tabBar)
+tabCorner.CornerRadius = UDim.new(0,5)
+
+local tabGradient = Instance.new("UIGradient", tabBar)
+tabGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255,120,150)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(200,100,125))
+}
+tabGradient.Rotation = 90
+
+local layout = Instance.new("UIListLayout", tabBar)
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.Padding = UDim.new(0,5)
+
+-- CONTENT
+local content = Instance.new("Frame", main)
+content.Position = UDim2.new(0,0,0,70)
+content.Size = UDim2.new(1,0,1,-70)
+content.BackgroundTransparency = 1
+
+local pages = {}
+
+local tabButtons = {}
+
+local function createTab(name)
+
+	local button = Instance.new("TextButton", tabBar)
+	button.Size = UDim2.new(0,120,1,0)
+	button.Text = name
+	button.BackgroundColor3 = Color3.fromRGB(35,35,35)
+	button.TextColor3 = Color3.new(1,1,1)
+	button.Font = Enum.Font.Gotham
+	button.TextSize = 16
+
+	local buttonCorner = Instance.new("UICorner", button)
+	buttonCorner.CornerRadius = UDim.new(0,5)
+
+	local buttonStroke = Instance.new("UIStroke", button)
+	buttonStroke.Color = Color3.fromRGB(255,120,150)
+	buttonStroke.Thickness = 1
+
+	local page = Instance.new("Frame", content)
+	page.Size = UDim2.new(1,0,1,0)
+	page.Visible = false
+	page.BackgroundTransparency = 1
+
+	pages[name] = page
+	tabButtons[name] = button
+
+	button.MouseButton1Click:Connect(function()
+		for n,p in pairs(pages) do
+			p.Visible = false
+			local btn = tabButtons[n]
+			if btn then
+				TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35,35,35)}):Play()
+			end
+		end
+		page.Visible = true
+		TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+	end)
+
+	button.MouseEnter:Connect(function()
+		TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50,50,50)}):Play()
+	end)
+
+	button.MouseLeave:Connect(function()
+		local isActive = false
+		for n,p in pairs(pages) do
+			if p.Visible and tabButtons[n] == button then
+				isActive = true
+				break
+			end
+		end
+		if not isActive then
+			TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35,35,35)}):Play()
+		end
+	end)
+
+	return page
+end
+
+-- CREATE TABS
+local gameplay = createTab("Gameplay")
+local visuals = createTab("Visuals")
+local misc = createTab("Misc")
+local keybinds = createTab("Keybinds")
+
+gameplay.Visible = true
+tabButtons["Gameplay"].BackgroundColor3 = Color3.fromRGB(255,120,150)
+
+-- VARIABLES
+local cameraAssist=false
+local highlightsEnabled=false
+local menuOpen = true
+UIS.MouseIconEnabled = true
+
+local function toggleMenu()
+    menuOpen = not menuOpen
+    if menuOpen then
+        local tween = TweenService:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0,600,0,350)})
+        tween:Play()
+        UIS.MouseIconEnabled = true
+    else
+        local tween = TweenService:Create(main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0,0,0,0)})
+        tween:Play()
+        tween.Completed:Wait()
+        UIS.MouseIconEnabled = false
+    end
+end
+
+-- CAMERA ASSIST TOGGLE
+local toggleAim = Instance.new("TextButton", gameplay)
+toggleAim.Position = UDim2.new(0,20,0,20)
+toggleAim.Size = UDim2.new(0,200,0,35)
+toggleAim.Text = "Camera Assist: OFF"
+toggleAim.BackgroundColor3 = Color3.fromRGB(255,120,150)
+toggleAim.TextColor3 = Color3.new(1,1,1)
+toggleAim.Font = Enum.Font.Gotham
+toggleAim.TextSize = 16
+
+local aimCorner = Instance.new("UICorner", toggleAim)
+aimCorner.CornerRadius = UDim.new(0,5)
+
+local aimStroke = Instance.new("UIStroke", toggleAim)
+aimStroke.Color = Color3.fromRGB(255,120,150)
+aimStroke.Thickness = 1
+
+toggleAim.MouseEnter:Connect(function()
+    TweenService:Create(toggleAim, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+toggleAim.MouseLeave:Connect(function()
+    TweenService:Create(toggleAim, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+toggleAim.MouseButton1Click:Connect(function()
+	cameraAssist = not cameraAssist
+	toggleAim.Text = cameraAssist and "Camera Assist: ON" or "Camera Assist: OFF"
+end)
+
+-- PLAYER HIGHLIGHT
+local toggleESP = Instance.new("TextButton", visuals)
+toggleESP.Position = UDim2.new(0,20,0,20)
+toggleESP.Size = UDim2.new(0,200,0,35)
+toggleESP.Text = "Player Highlight: OFF"
+toggleESP.BackgroundColor3 = Color3.fromRGB(255,120,150)
+toggleESP.TextColor3 = Color3.new(1,1,1)
+toggleESP.Font = Enum.Font.Gotham
+toggleESP.TextSize = 16
+
+local espCorner = Instance.new("UICorner", toggleESP)
+espCorner.CornerRadius = UDim.new(0,5)
+
+local espStroke = Instance.new("UIStroke", toggleESP)
+espStroke.Color = Color3.fromRGB(255,120,150)
+espStroke.Thickness = 1
+
+toggleESP.MouseEnter:Connect(function()
+    TweenService:Create(toggleESP, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+toggleESP.MouseLeave:Connect(function()
+    TweenService:Create(toggleESP, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+toggleESP.MouseButton1Click:Connect(function()
+	highlightsEnabled = not highlightsEnabled
+	toggleESP.Text = highlightsEnabled and "Player Highlight: ON" or "Player Highlight: OFF"
+end)
+
+-- SKYBOX BUTTONS
+local sky1 = Instance.new("TextButton", visuals)
+sky1.Position = UDim2.new(0,20,0,80)
+sky1.Size = UDim2.new(0,200,0,35)
+sky1.Text = "Skybox: Space"
+sky1.BackgroundColor3 = Color3.fromRGB(255,120,150)
+sky1.TextColor3 = Color3.new(1,1,1)
+sky1.Font = Enum.Font.Gotham
+sky1.TextSize = 16
+
+local sky1Corner = Instance.new("UICorner", sky1)
+sky1Corner.CornerRadius = UDim.new(0,5)
+
+local sky1Stroke = Instance.new("UIStroke", sky1)
+sky1Stroke.Color = Color3.fromRGB(255,120,150)
+sky1Stroke.Thickness = 1
+
+sky1.MouseEnter:Connect(function()
+    TweenService:Create(sky1, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+sky1.MouseLeave:Connect(function()
+    TweenService:Create(sky1, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+local sky2 = Instance.new("TextButton", visuals)
+sky2.Position = UDim2.new(0,20,0,130)
+sky2.Size = UDim2.new(0,200,0,35)
+sky2.Text = "Skybox: Sunset"
+sky2.BackgroundColor3 = Color3.fromRGB(255,120,150)
+sky2.TextColor3 = Color3.new(1,1,1)
+sky2.Font = Enum.Font.Gotham
+sky2.TextSize = 16
+
+local sky2Corner = Instance.new("UICorner", sky2)
+sky2Corner.CornerRadius = UDim.new(0,5)
+
+local sky2Stroke = Instance.new("UIStroke", sky2)
+sky2Stroke.Color = Color3.fromRGB(255,120,150)
+sky2Stroke.Thickness = 1
+
+sky2.MouseEnter:Connect(function()
+    TweenService:Create(sky2, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+sky2.MouseLeave:Connect(function()
+    TweenService:Create(sky2, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+local function setSky(id)
+
+	local sky = Instance.new("Sky")
+
+	sky.SkyboxBk="rbxassetid://"..id
+	sky.SkyboxDn="rbxassetid://"..id
+	sky.SkyboxFt="rbxassetid://"..id
+	sky.SkyboxLf="rbxassetid://"..id
+	sky.SkyboxRt="rbxassetid://"..id
+	sky.SkyboxUp="rbxassetid://"..id
+
+	game.Lighting:ClearAllChildren()
+	sky.Parent = game.Lighting
+
+end
+
+sky1.MouseButton1Click:Connect(function()
+	setSky(159454299)
+end)
+
+sky2.MouseButton1Click:Connect(function()
+	setSky(271042516)
+end)
+
+-- AMBIENT COLOR BUTTONS
+local ambient1 = Instance.new("TextButton", visuals)
+ambient1.Position = UDim2.new(0,20,0,180)
+ambient1.Size = UDim2.new(0,200,0,35)
+ambient1.Text = "Ambient: Blue Sky"
+ambient1.BackgroundColor3 = Color3.fromRGB(255,120,150)
+ambient1.TextColor3 = Color3.new(1,1,1)
+ambient1.Font = Enum.Font.Gotham
+ambient1.TextSize = 16
+
+local amb1Corner = Instance.new("UICorner", ambient1)
+amb1Corner.CornerRadius = UDim.new(0,5)
+
+local amb1Stroke = Instance.new("UIStroke", ambient1)
+amb1Stroke.Color = Color3.fromRGB(255,120,150)
+amb1Stroke.Thickness = 1
+
+ambient1.MouseEnter:Connect(function()
+    TweenService:Create(ambient1, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+ambient1.MouseLeave:Connect(function()
+    TweenService:Create(ambient1, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+ambient1.MouseButton1Click:Connect(function()
+    game.Lighting.Ambient = Color3.fromRGB(100,150,255)
+end)
+
+local ambient2 = Instance.new("TextButton", visuals)
+ambient2.Position = UDim2.new(0,20,0,230)
+ambient2.Size = UDim2.new(0,200,0,35)
+ambient2.Text = "Ambient: Sunset"
+ambient2.BackgroundColor3 = Color3.fromRGB(255,120,150)
+ambient2.TextColor3 = Color3.new(1,1,1)
+ambient2.Font = Enum.Font.Gotham
+ambient2.TextSize = 16
+
+local amb2Corner = Instance.new("UICorner", ambient2)
+amb2Corner.CornerRadius = UDim.new(0,5)
+
+local amb2Stroke = Instance.new("UIStroke", ambient2)
+amb2Stroke.Color = Color3.fromRGB(255,120,150)
+amb2Stroke.Thickness = 1
+
+ambient2.MouseEnter:Connect(function()
+    TweenService:Create(ambient2, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+ambient2.MouseLeave:Connect(function()
+    TweenService:Create(ambient2, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+ambient2.MouseButton1Click:Connect(function()
+    game.Lighting.Ambient = Color3.fromRGB(255,150,100)
+end)
+
+-- CAMERA ASSIST SYSTEM
+local function closestPlayer()
+
+	local closest=nil
+	local dist=math.huge
+
+	for _,p in pairs(Players:GetPlayers()) do
+
+		if p~=player and p.Character and p.Character:FindFirstChild("Head") then
+
+			local pos,visible=camera:WorldToViewportPoint(p.Character.Head.Position)
+
+			if visible then
+
+				local d=(Vector2.new(pos.X,pos.Y)-
+				Vector2.new(camera.ViewportSize.X/2,camera.ViewportSize.Y/2)).Magnitude
+
+				if d<dist then
+					dist=d
+					closest=p
+				end
+
+			end
+
+		end
+
+	end
+
+	return closest
+
+end
+
+RunService.RenderStepped:Connect(function()
+
+	if cameraAssist then
+
+		local target=closestPlayer()
+
+		if target then
+			camera.CFrame=camera.CFrame:Lerp(
+				CFrame.new(camera.CFrame.Position,target.Character.Head.Position),
+				0.08
+			)
+		end
+
+	end
+
+	if infiniteJump then
+		if player.Character and player.Character:FindFirstChild("Humanoid") then
+			player.Character.Humanoid.JumpPower = 50
+			if player.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
+				player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			end
+		end
+	end
+
+end)
+
+-- HIGHLIGHT SYSTEM
+local highlights={}
+
+while true do
+
+	for _,p in pairs(Players:GetPlayers()) do
+
+		if p~=player and p.Character then
+
+			if highlightsEnabled and not highlights[p] then
+
+				local h=Instance.new("Highlight")
+				h.FillColor=Color3.fromRGB(255,120,150)
+				h.Parent=p.Character
+				highlights[p]=h
+
+			elseif not highlightsEnabled and highlights[p] then
+
+				highlights[p]:Destroy()
+				highlights[p]=nil
+
+			end
+
+		end
+
+	end
+
+	task.wait(1)
+
+end
+
+-- VARIABLES
+local speedBoost = false
+local jumpBoost = false
+local infiniteJump = false
+local cameraKey = Enum.KeyCode.C
+local espKey = Enum.KeyCode.V
+local speedKey = Enum.KeyCode.LeftShift
+local jumpKey = Enum.KeyCode.Space
+local infJumpKey = Enum.KeyCode.F
+local listeningForKey = false
+
+-- MISC FEATURES
+local toggleSpeed = Instance.new("TextButton", misc)
+toggleSpeed.Position = UDim2.new(0,20,0,20)
+toggleSpeed.Size = UDim2.new(0,200,0,35)
+toggleSpeed.Text = "Speed Boost: OFF"
+toggleSpeed.BackgroundColor3 = Color3.fromRGB(255,120,150)
+toggleSpeed.TextColor3 = Color3.new(1,1,1)
+toggleSpeed.Font = Enum.Font.Gotham
+toggleSpeed.TextSize = 16
+
+local speedCorner = Instance.new("UICorner", toggleSpeed)
+speedCorner.CornerRadius = UDim.new(0,5)
+
+local speedStroke = Instance.new("UIStroke", toggleSpeed)
+speedStroke.Color = Color3.fromRGB(255,120,150)
+speedStroke.Thickness = 1
+
+toggleSpeed.MouseEnter:Connect(function()
+    TweenService:Create(toggleSpeed, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+toggleSpeed.MouseLeave:Connect(function()
+    TweenService:Create(toggleSpeed, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+toggleSpeed.MouseButton1Click:Connect(function()
+    speedBoost = not speedBoost
+    toggleSpeed.Text = speedBoost and "Speed Boost: ON" or "Speed Boost: OFF"
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = speedBoost and 50 or 16
+    end
+end)
+
+local toggleJump = Instance.new("TextButton", misc)
+toggleJump.Position = UDim2.new(0,20,0,70)
+toggleJump.Size = UDim2.new(0,200,0,35)
+toggleJump.Text = "Jump Boost: OFF"
+toggleJump.BackgroundColor3 = Color3.fromRGB(255,120,150)
+toggleJump.TextColor3 = Color3.new(1,1,1)
+toggleJump.Font = Enum.Font.Gotham
+toggleJump.TextSize = 16
+
+local jumpCorner = Instance.new("UICorner", toggleJump)
+jumpCorner.CornerRadius = UDim.new(0,5)
+
+local jumpStroke = Instance.new("UIStroke", toggleJump)
+jumpStroke.Color = Color3.fromRGB(255,120,150)
+jumpStroke.Thickness = 1
+
+toggleJump.MouseEnter:Connect(function()
+    TweenService:Create(toggleJump, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+toggleJump.MouseLeave:Connect(function()
+    TweenService:Create(toggleJump, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+toggleJump.MouseButton1Click:Connect(function()
+    jumpBoost = not jumpBoost
+    toggleJump.Text = jumpBoost and "Jump Boost: ON" or "Jump Boost: OFF"
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.JumpPower = jumpBoost and 100 or 50
+    end
+end)
+
+local toggleInfJump = Instance.new("TextButton", misc)
+toggleInfJump.Position = UDim2.new(0,20,0,120)
+toggleInfJump.Size = UDim2.new(0,200,0,35)
+toggleInfJump.Text = "Infinite Jump: OFF"
+toggleInfJump.BackgroundColor3 = Color3.fromRGB(255,120,150)
+toggleInfJump.TextColor3 = Color3.new(1,1,1)
+toggleInfJump.Font = Enum.Font.Gotham
+toggleInfJump.TextSize = 16
+
+local infCorner = Instance.new("UICorner", toggleInfJump)
+infCorner.CornerRadius = UDim.new(0,5)
+
+local infStroke = Instance.new("UIStroke", toggleInfJump)
+infStroke.Color = Color3.fromRGB(255,120,150)
+infStroke.Thickness = 1
+
+toggleInfJump.MouseEnter:Connect(function()
+    TweenService:Create(toggleInfJump, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+toggleInfJump.MouseLeave:Connect(function()
+    TweenService:Create(toggleInfJump, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+toggleInfJump.MouseButton1Click:Connect(function()
+    infiniteJump = not infiniteJump
+    toggleInfJump.Text = infiniteJump and "Infinite Jump: ON" or "Infinite Jump: OFF"
+end)
+
+-- KEYBIND BUTTONS
+local setCamKey = Instance.new("TextButton", keybinds)
+setCamKey.Position = UDim2.new(0,20,0,20)
+setCamKey.Size = UDim2.new(0,250,0,35)
+setCamKey.Text = "Set Key: Camera Assist (" .. cameraKey.Name .. ")"
+setCamKey.BackgroundColor3 = Color3.fromRGB(255,120,150)
+setCamKey.TextColor3 = Color3.new(1,1,1)
+setCamKey.Font = Enum.Font.Gotham
+setCamKey.TextSize = 16
+
+local setCamCorner = Instance.new("UICorner", setCamKey)
+setCamCorner.CornerRadius = UDim.new(0,5)
+
+local setCamStroke = Instance.new("UIStroke", setCamKey)
+setCamStroke.Color = Color3.fromRGB(255,120,150)
+setCamStroke.Thickness = 1
+
+setCamKey.MouseEnter:Connect(function()
+    TweenService:Create(setCamKey, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+setCamKey.MouseLeave:Connect(function()
+    TweenService:Create(setCamKey, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+setCamKey.MouseButton1Click:Connect(function()
+    listeningForKey = "camera"
+    setCamKey.Text = "Press a key for Camera Assist..."
+end)
+
+local setEspKey = Instance.new("TextButton", keybinds)
+setEspKey.Position = UDim2.new(0,20,0,70)
+setEspKey.Size = UDim2.new(0,250,0,35)
+setEspKey.Text = "Set Key: Player Highlight (" .. espKey.Name .. ")"
+setEspKey.BackgroundColor3 = Color3.fromRGB(255,120,150)
+setEspKey.TextColor3 = Color3.new(1,1,1)
+setEspKey.Font = Enum.Font.Gotham
+setEspKey.TextSize = 16
+
+local setEspCorner = Instance.new("UICorner", setEspKey)
+setEspCorner.CornerRadius = UDim.new(0,5)
+
+local setEspStroke = Instance.new("UIStroke", setEspKey)
+setEspStroke.Color = Color3.fromRGB(255,120,150)
+setEspStroke.Thickness = 1
+
+setEspKey.MouseEnter:Connect(function()
+    TweenService:Create(setEspKey, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+setEspKey.MouseLeave:Connect(function()
+    TweenService:Create(setEspKey, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+setEspKey.MouseButton1Click:Connect(function()
+    listeningForKey = "esp"
+    setEspKey.Text = "Press a key for Player Highlight..."
+end)
+
+local setSpeedKey = Instance.new("TextButton", keybinds)
+setSpeedKey.Position = UDim2.new(0,20,0,120)
+setSpeedKey.Size = UDim2.new(0,250,0,35)
+setSpeedKey.Text = "Set Key: Speed Boost (" .. speedKey.Name .. ")"
+setSpeedKey.BackgroundColor3 = Color3.fromRGB(255,120,150)
+setSpeedKey.TextColor3 = Color3.new(1,1,1)
+setSpeedKey.Font = Enum.Font.Gotham
+setSpeedKey.TextSize = 16
+
+local setSpeedCorner = Instance.new("UICorner", setSpeedKey)
+setSpeedCorner.CornerRadius = UDim.new(0,5)
+
+local setSpeedStroke = Instance.new("UIStroke", setSpeedKey)
+setSpeedStroke.Color = Color3.fromRGB(255,120,150)
+setSpeedStroke.Thickness = 1
+
+setSpeedKey.MouseEnter:Connect(function()
+    TweenService:Create(setSpeedKey, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+setSpeedKey.MouseLeave:Connect(function()
+    TweenService:Create(setSpeedKey, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+setSpeedKey.MouseButton1Click:Connect(function()
+    listeningForKey = "speed"
+    setSpeedKey.Text = "Press a key for Speed Boost..."
+end)
+
+local setJumpKey = Instance.new("TextButton", keybinds)
+setJumpKey.Position = UDim2.new(0,20,0,170)
+setJumpKey.Size = UDim2.new(0,250,0,35)
+setJumpKey.Text = "Set Key: Jump Boost (" .. jumpKey.Name .. ")"
+setJumpKey.BackgroundColor3 = Color3.fromRGB(255,120,150)
+setJumpKey.TextColor3 = Color3.new(1,1,1)
+setJumpKey.Font = Enum.Font.Gotham
+setJumpKey.TextSize = 16
+
+local setJumpCorner = Instance.new("UICorner", setJumpKey)
+setJumpCorner.CornerRadius = UDim.new(0,5)
+
+local setJumpStroke = Instance.new("UIStroke", setJumpKey)
+setJumpStroke.Color = Color3.fromRGB(255,120,150)
+setJumpStroke.Thickness = 1
+
+setJumpKey.MouseEnter:Connect(function()
+    TweenService:Create(setJumpKey, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+setJumpKey.MouseLeave:Connect(function()
+    TweenService:Create(setJumpKey, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+setJumpKey.MouseButton1Click:Connect(function()
+    listeningForKey = "jump"
+    setJumpKey.Text = "Press a key for Jump Boost..."
+end)
+
+local setInfJumpKey = Instance.new("TextButton", keybinds)
+setInfJumpKey.Position = UDim2.new(0,20,0,220)
+setInfJumpKey.Size = UDim2.new(0,250,0,35)
+setInfJumpKey.Text = "Set Key: Infinite Jump (" .. infJumpKey.Name .. ")"
+setInfJumpKey.BackgroundColor3 = Color3.fromRGB(255,120,150)
+setInfJumpKey.TextColor3 = Color3.new(1,1,1)
+setInfJumpKey.Font = Enum.Font.Gotham
+setInfJumpKey.TextSize = 16
+
+local setInfJumpCorner = Instance.new("UICorner", setInfJumpKey)
+setInfJumpCorner.CornerRadius = UDim.new(0,5)
+
+local setInfJumpStroke = Instance.new("UIStroke", setInfJumpKey)
+setInfJumpStroke.Color = Color3.fromRGB(255,120,150)
+setInfJumpStroke.Thickness = 1
+
+setInfJumpKey.MouseEnter:Connect(function()
+    TweenService:Create(setInfJumpKey, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+setInfJumpKey.MouseLeave:Connect(function()
+    TweenService:Create(setInfJumpKey, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+setInfJumpKey.MouseButton1Click:Connect(function()
+    listeningForKey = "infjump"
+    setInfJumpKey.Text = "Press a key for Infinite Jump..."
+end)
+
+-- GLOBAL KEY LISTENER
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    -- Always allow toggling the menu with M even if the game already handled the key
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.M then
+        toggleMenu()
+        return
+    end
+
+    if not gameProcessed and input.UserInputType == Enum.UserInputType.Keyboard then
+        if listeningForKey == "camera" then
+            cameraKey = input.KeyCode
+            listeningForKey = false
+            setCamKey.Text = "Set Key: Camera Assist (" .. cameraKey.Name .. ")"
+        elseif listeningForKey == "esp" then
+            espKey = input.KeyCode
+            listeningForKey = false
+            setEspKey.Text = "Set Key: Player Highlight (" .. espKey.Name .. ")"
+        elseif listeningForKey == "speed" then
+            speedKey = input.KeyCode
+            listeningForKey = false
+            setSpeedKey.Text = "Set Key: Speed Boost (" .. speedKey.Name .. ")"
+        elseif listeningForKey == "jump" then
+            jumpKey = input.KeyCode
+            listeningForKey = false
+            setJumpKey.Text = "Set Key: Jump Boost (" .. jumpKey.Name .. ")"
+        elseif listeningForKey == "infjump" then
+            infJumpKey = input.KeyCode
+            listeningForKey = false
+            setInfJumpKey.Text = "Set Key: Infinite Jump (" .. infJumpKey.Name .. ")"
+        elseif input.KeyCode == cameraKey then
+            cameraAssist = not cameraAssist
+            toggleAim.Text = cameraAssist and "Camera Assist: ON" or "Camera Assist: OFF"
+        elseif input.KeyCode == espKey then
+            highlightsEnabled = not highlightsEnabled
+            toggleESP.Text = highlightsEnabled and "Player Highlight: ON" or "Player Highlight: OFF"
+        elseif input.KeyCode == speedKey then
+            speedBoost = not speedBoost
+            toggleSpeed.Text = speedBoost and "Speed Boost: ON" or "Speed Boost: OFF"
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.WalkSpeed = speedBoost and 50 or 16
+            end
+        elseif input.KeyCode == jumpKey then
+            jumpBoost = not jumpBoost
+            toggleJump.Text = jumpBoost and "Jump Boost: ON" or "Jump Boost: OFF"
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.JumpPower = jumpBoost and 100 or 50
+            end
+        elseif input.KeyCode == infJumpKey then
+            infiniteJump = not infiniteJump
+            toggleInfJump.Text = infiniteJump and "Infinite Jump: ON" or "Infinite Jump: OFF"
+        elseif input.KeyCode == Enum.KeyCode.M then
+            toggleMenu()
+        end
+    end
+end)
