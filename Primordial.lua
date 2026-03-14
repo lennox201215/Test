@@ -240,6 +240,29 @@ tabButtons["Gameplay"].BackgroundColor3 = Color3.fromRGB(255,120,150)
 -- VARIABLES
 local cameraAssist=false
 local highlightsEnabled=false
+local tracersEnabled=false
+local tracerLines={}
+local tracerUI={}
+local tracerBeams={}
+
+-- Cleanup beams when players leave to avoid leftover objects in Workspace
+Players.PlayerRemoving:Connect(function(p)
+	local id = p.UserId
+	local data = tracerBeams[id]
+	if data then
+		if data.beam then data.beam:Destroy() end
+		if data.att0 then data.att0:Destroy() end
+		if data.att1 then data.att1:Destroy() end
+		tracerBeams[id] = nil
+	end
+end)
+
+local tracerContainer = Instance.new("Frame", gui)
+tracerContainer.Size = UDim2.new(1,0,1,0)
+tracerContainer.BackgroundTransparency = 1
+tracerContainer.ClipsDescendants = false
+tracerContainer.ZIndex = 50
+
 local menuOpen = true
 UIS.MouseIconEnabled = true
 
@@ -315,6 +338,36 @@ end)
 toggleESP.MouseButton1Click:Connect(function()
 	highlightsEnabled = not highlightsEnabled
 	toggleESP.Text = highlightsEnabled and "Player Highlight: ON" or "Player Highlight: OFF"
+end)
+
+-- TRACERS
+local toggleTracers = Instance.new("TextButton", visuals)
+toggleTracers.Position = UDim2.new(0,240,0,20)
+toggleTracers.Size = UDim2.new(0,200,0,35)
+toggleTracers.Text = "Tracers: OFF"
+toggleTracers.BackgroundColor3 = Color3.fromRGB(255,120,150)
+toggleTracers.TextColor3 = Color3.new(1,1,1)
+toggleTracers.Font = Enum.Font.Gotham
+toggleTracers.TextSize = 16
+
+local tracersCorner = Instance.new("UICorner", toggleTracers)
+tracersCorner.CornerRadius = UDim.new(0,5)
+
+local tracersStroke = Instance.new("UIStroke", toggleTracers)
+tracersStroke.Color = Color3.fromRGB(255,120,150)
+tracersStroke.Thickness = 1
+
+toggleTracers.MouseEnter:Connect(function()
+    TweenService:Create(toggleTracers, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200,100,125)}):Play()
+end)
+
+toggleTracers.MouseLeave:Connect(function()
+    TweenService:Create(toggleTracers, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255,120,150)}):Play()
+end)
+
+toggleTracers.MouseButton1Click:Connect(function()
+	tracersEnabled = not tracersEnabled
+	toggleTracers.Text = tracersEnabled and "Tracers: ON" or "Tracers: OFF"
 end)
 
 -- SKYBOX BUTTONS
@@ -494,6 +547,137 @@ RunService.RenderStepped:Connect(function()
 
 	end
 
+	-- TRACERS
+	if tracersEnabled then
+		local useDrawing = Drawing and type(Drawing.new) == "function"
+		local screenCenter = Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)
+
+		local function ensureBeamForPlayer(p)
+			local id = p.UserId
+			if tracerBeams[id] then
+				return tracerBeams[id]
+			end
+
+			local beam = Instance.new("Beam")
+			beam.FaceCamera = true
+			beam.Width0 = 0.1
+			beam.Width1 = 0.1
+			beam.Color = ColorSequence.new(Color3.fromRGB(255,120,150))
+			beam.Transparency = NumberSequence.new(0.4)
+			beam.LightEmission = 0.5
+
+			local att0 = Instance.new("Attachment")
+			local att1 = Instance.new("Attachment")
+
+			beam.Attachment0 = att0
+			beam.Attachment1 = att1
+
+			-- Attachments must be parented to BaseParts; we'll parent them every frame when heads exist.
+			beam.Parent = workspace
+
+			tracerBeams[id] = {
+				beam = beam,
+				att0 = att0,
+				att1 = att1,
+			}
+
+			return tracerBeams[id]
+		end
+
+		local function cleanupBeam(id)
+			local data = tracerBeams[id]
+			if data then
+				if data.beam then
+					data.beam:Destroy()
+				end
+				if data.att0 then
+					data.att0:Destroy()
+				end
+				if data.att1 then
+					data.att1:Destroy()
+				end
+				tracerBeams[id] = nil
+			end
+		end
+
+		for _,p in pairs(Players:GetPlayers()) do
+			if p~=player and p.Character and p.Character:FindFirstChild("Head") then
+				local pos, visible = camera:WorldToViewportPoint(p.Character.Head.Position)
+				local id = p.UserId
+
+				if visible then
+					-- World beam (visible to others)
+					local beamData = ensureBeamForPlayer(p)
+				local localHead = player.Character and player.Character:FindFirstChild("Head")
+				local targetHead = p.Character and p.Character:FindFirstChild("Head")
+				if localHead then
+					beamData.att0.Parent = localHead
+					beamData.att0.WorldPosition = localHead.Position
+				end
+				if targetHead then
+					beamData.att1.Parent = targetHead
+					beamData.att1.WorldPosition = targetHead.Position
+				end
+					-- UI tracers (local player)
+					if useDrawing then
+						if not tracerLines[id] then
+							local line = Drawing.new("Line")
+							line.Color = Color3.fromRGB(255,120,150)
+							line.Thickness = 1.5
+							line.Transparency = 0.8
+							line.From = screenCenter
+							line.To = Vector2.new(pos.X, pos.Y)
+							line.Visible = true
+							tracerLines[id] = line
+						end
+						local line = tracerLines[id]
+						line.From = screenCenter
+						line.To = Vector2.new(pos.X, pos.Y)
+						line.Visible = true
+					else
+						if not tracerUI[id] then
+							local line = Instance.new("Frame", tracerContainer)
+							line.ZIndex = 51
+							line.AnchorPoint = Vector2.new(0, 0.5)
+							line.BackgroundColor3 = Color3.fromRGB(255,120,150)
+							line.BorderSizePixel = 0
+							line.Size = UDim2.new(0, 1, 0, 2)
+							line.Rotation = 0
+							line.Visible = true
+							tracerUI[id] = line
+						end
+						local line = tracerUI[id]
+						local dir = Vector2.new(pos.X, pos.Y) - screenCenter
+						local length = dir.Magnitude
+						line.Size = UDim2.new(0, length, 0, 2)
+						line.Position = UDim2.new(0, screenCenter.X, 0, screenCenter.Y)
+						line.Rotation = math.deg(math.atan2(dir.Y, dir.X))
+						line.Visible = true
+					end
+				else
+					-- not visible: hide
+					if tracerLines[id] then
+						tracerLines[id].Visible = false
+					end
+					if tracerUI[id] then
+						tracerUI[id].Visible = false
+					end
+					cleanupBeam(id)
+				end
+			end
+		end
+	else
+		for id,line in pairs(tracerLines) do
+			line.Visible = false
+		end
+		for id,line in pairs(tracerUI) do
+			line.Visible = false
+		end
+		for id,_ in pairs(tracerBeams) do
+			cleanupBeam(id)
+		end
+	end
+
 	if infiniteJump then
 		if player.Character and player.Character:FindFirstChild("Humanoid") then
 			player.Character.Humanoid.JumpPower = 50
@@ -508,33 +692,35 @@ end)
 -- HIGHLIGHT SYSTEM
 local highlights={}
 
-while true do
+task.spawn(function()
+	while true do
 
-	for _,p in pairs(Players:GetPlayers()) do
+		for _,p in pairs(Players:GetPlayers()) do
 
-		if p~=player and p.Character then
+			if p~=player and p.Character then
 
-			if highlightsEnabled and not highlights[p] then
+				if highlightsEnabled and not highlights[p] then
 
-				local h=Instance.new("Highlight")
-				h.FillColor=Color3.fromRGB(255,120,150)
-				h.Parent=p.Character
-				highlights[p]=h
+					local h=Instance.new("Highlight")
+					h.FillColor=Color3.fromRGB(255,120,150)
+					h.Parent=p.Character
+					highlights[p]=h
 
-			elseif not highlightsEnabled and highlights[p] then
+				elseif not highlightsEnabled and highlights[p] then
 
-				highlights[p]:Destroy()
-				highlights[p]=nil
+					highlights[p]:Destroy()
+					highlights[p]=nil
+
+				end
 
 			end
 
 		end
 
+		task.wait(1)
+
 	end
-
-	task.wait(1)
-
-end
+end)
 
 -- VARIABLES
 local speedBoost = false
